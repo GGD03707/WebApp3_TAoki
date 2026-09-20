@@ -1,1 +1,32 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>情報Ⅰ パケット通信シミュレーター</title><link rel="stylesheet" href="style.css"></head><body>
+<header><h1>📦 パケット通信シミュレーター</h1><p>元データ → 分割 → ヘッダ付加 → 複数経路 → 到着順の変化 → 再構成</p></header>
+<main>
+<section class="panel"><h2>1. 通信条件を設定</h2><div class="grid">
+<label>元データ<textarea id="data">HELLO! 情報Ⅰで学ぶパケット通信です。</textarea></label>
+<label>1パケットのデータ量<input id="size" type="range" min="3" max="12" value="6"><output id="sizeOut">6文字</output></label>
+<label>通信速度<input id="speed" type="range" min="1" max="8" value="4"><output id="speedOut">4 packet/s</output></label>
+<label>パケット損失率<input id="loss" type="range" min="0" max="40" value="15"><output id="lossOut">15%</output></label>
+<label>経路差（ジッター）<input id="jitter" type="range" min="0" max="100" value="70"><output id="jitterOut">70%</output></label>
+<label>通信方式<select id="mode"><option value="tcp">TCP（ACK・再送あり）</option><option value="udp">UDP（再送なし）</option></select></label>
+</div>
+<div class="buttons"><button id="make">① パケット作成</button><button id="start" disabled>▶ ② 通信開始</button><button id="reset" class="secondary">↺ リセット</button></div>
+<div class="experiment"><b>授業での実験ポイント</b>：①パケットサイズを変える → 分割数・ヘッダの割合を見る　②TCP/UDPを変える → ロス時の違いを見る　③ジッターを変える → 到着順の変化を見る</div>
+</section>
 
+<section class="panel"><h2>2. 元データをパケットに分割</h2><div id="source" class="source">「パケット作成」を押してください</div><div id="packets" class="cards"></div>
+<div class="overhead"><span>パケット数 <b id="packetCount">0</b></span><span>教材上のヘッダ総量 <b>20 bytes × パケット数</b></span><span>ヘッダ割合 <b id="overhead">0%</b></span><span>送信総量（概算） <b id="totalBytes">0 bytes</b></span></div>
+<p class="hint">💡 1つのデータを小さく分割すると、複数の通信を同じ回線で交互に流せます。一方、各パケットにヘッダが付くため、分割しすぎるとヘッダの割合が増えます。</p></section>
+
+<section class="panel"><h2>3. ネットワークをパケットが進む</h2><div class="network"><div class="computer">💻<b>送信側</b><small>PC-A<br>192.168.1.10</small></div><div class="routes"><div class="route r1"><span class="routeLabel">経路A</span><div id="laneA" class="lane"></div><div id="ackLaneA" class="ackLane"></div></div><div class="route r2"><span class="routeLabel">経路B</span><div id="laneB" class="lane"></div><div id="ackLaneB" class="ackLane"></div></div></div><div class="router">📡<b>ルーター</b><small>経路を選択・転送</small></div><div class="computer">💻<b>受信側</b><small>PC-B<br>192.168.1.20</small></div></div>
+<div class="legend"><span>● データパケット</span><span>● ACK（TCP）</span><span>❌ パケット損失</span><span>🔁 再送</span></div><div id="log" class="log">通信イベントがここに表示されます。</div></section>
+
+<section class="panel"><h2>4. 受信側：到着順と再構成</h2><p class="hint">複数の経路を通ると、後から送ったパケットが先に届くことがあります。これが<strong>順序不順</strong>です。受信側は<strong>シーケンス番号</strong>を使って正しい順番に並べます。</p><div class="receive"><div><h3>実際の到着順</h3><div id="arrival" class="arrival"></div></div><div class="arrow">→</div><div><h3>シーケンス番号で再構成</h3><div id="ordered" class="arrival"></div></div></div><div id="reconstructed" class="result">まだ受信していません。</div></section>
+
+<section class="panel"><h2>5. TCPとUDPの違い</h2><div class="compare"><div><h3>TCP</h3><p>① パケット送信</p><p>② 受信側がACKを返す</p><p>③ ACKが来なければタイムアウト</p><p>④ 該当データを再送</p><p>⑤ シーケンス番号で順序を管理</p><b>→ 信頼性を高める代わりに、再送などで時間がかかる</b></div><div><h3>UDP</h3><p>① パケット送信</p><p>② ACKを待たない</p><p>③ 失われても再送しない</p><p>④ 到着したデータを利用</p><b>→ 再送による待ち時間を減らしやすいが、欠落することがある</b></div></div></section>
+
+<section class="panel"><h2>6. パケットのヘッダを見る</h2><p class="hint">パケットをクリックすると、教材用に簡略化したヘッダを確認できます。</p><div id="headerPackets" class="cards"></div></section>
+
+<section class="panel"><h2>7. 通信品質</h2><div class="metrics"><div>総数<strong id="total">0</strong></div><div>到着<strong id="received">0</strong></div><div>損失<strong id="lost">0</strong></div><div>再送<strong id="retrans">0</strong></div><div>ACK<strong id="acks">0</strong></div><div>重複<strong id="duplicates">0</strong></div><div>到着率<strong id="rate">0%</strong></div><div>時間<strong id="time">0.0s</strong></div></div><div id="quality" class="quality">条件を設定して通信を開始してください。</div></section>
+</main>
+<div id="modal" class="modal" aria-hidden="true"><div class="modalBox"><button id="close" class="close">×</button><h2>📦 パケットヘッダ</h2><div id="modalBody"></div><div class="payloadBox"><b>データ本体（Payload）</b><span id="modalPayload"></span></div><p class="small">※実際のTCP/IP通信では、IPヘッダ、TCP/UDPヘッダなど、プロトコルに応じた情報が付加されます。このシミュレーターでは高校生向けに項目を簡略化しています。</p></div></div>
+<script src="script.js"></script></body></html>
